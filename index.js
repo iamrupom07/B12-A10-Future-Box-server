@@ -53,18 +53,6 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/allhabits", async (req, res) => {
-      const cursor = habitsCollection.find();
-      const result = await cursor.toArray();
-      res.send(result);
-    });
-    app.get("/allhabits/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await habitsCollection.findOne(query);
-      res.send(result);
-    });
-
     app.delete("/allhabits/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };

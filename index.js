@@ -35,6 +35,21 @@ async function run() {
 
     const db = client.db("habit_db");
     const habitsCollection = db.collection("habits");
+    const usersCollection = db.collection("users");
+
+    app.post("/users", async (req, res) => {
+      const newUser = req.body;
+
+      const email = req.body.email;
+      const query = { email: email };
+      const existingUser = await usersCollection.findOne(query);
+      if (existingUser) {
+        res.send({ message: "Already User Exist" });
+      } else {
+        const result = await usersCollection.insertOne(newUser);
+        res.send(result);
+      }
+    });
 
     app.post("/allhabits", async (req, res) => {
       const newHabit = req.body;
@@ -54,8 +69,24 @@ async function run() {
     });
 
     app.get("/allhabits", async (req, res) => {
-      const cursor = habitsCollection.find();
+      const email = req.query.email;
+      const query = {};
+      if (email) {
+        query.creatorEmail = email;
+      }
+      const cursor = habitsCollection.find(query);
       const result = await cursor.toArray();
+      res.send(result);
+    });
+    app.get("/featuredHabits", async (req, res) => {
+      const cursor = habitsCollection.find().sort({ created_at: -1 }).limit(6);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+    app.get("/allhabits/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await habitsCollection.findOne(query);
       res.send(result);
     });
 

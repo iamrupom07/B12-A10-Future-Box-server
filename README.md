@@ -1,4 +1,4 @@
-# 📦 Future-Box Server
+# 📦 Habit Tracker Server
 
 This repository contains the server-side (backend) code for **Habit Tracker**, a full-stack web application. It is responsible for handling business logic, API endpoints, database management, and user authentication.
 

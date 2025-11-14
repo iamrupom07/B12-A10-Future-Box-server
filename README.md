@@ -18,3 +18,15 @@ This repository contains the server-side (backend) code for **Habit Tracker**, a
 * **User-Specific Data:** API routes to fetch data specific to the logged-in user (e.g., "My Orders," "My Profile").
 
 
+---
+
+## 🛠️ Technology Stack
+
+* **Runtime:** [Node.js](https://nodejs.org/en/)
+* **Framework:** [Express.js](https://expressjs.com/)
+* **Database:** [MongoDB](https://www.mongodb.com/)
+* **Middleware:** [CORS](https://www.npmjs.com/package/cors), [dotenv](https://www.npmjs.com/package/dotenv)
+* **Hosting:** [Vercel]
+
+---
+

@@ -29,4 +29,13 @@ This repository contains the server-side (backend) code for **Habit Tracker**, a
 * **Hosting:** [Vercel]
 
 ---
+## ⚙️ Getting Started
+
+To get a local copy up and running, follow these simple steps.
+
+### Prerequisites
+
+You must have [Node.js](https://nodejs.org/en/) (which includes npm) and [MongoDB](https://www.mongodb.com/try/download/community) installed on your local machine.
+
+
 

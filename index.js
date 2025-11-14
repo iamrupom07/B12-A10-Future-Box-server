@@ -1,22 +1,23 @@
-const express = require("express");
-const cors = require("cors");
+// index.js
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import { MongoClient, ServerApiVersion, ObjectId } from "mongodb";
+
+dotenv.config();
+
 const app = express();
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-const port = process.env.PORT || 3000;
-
-//middleware
-
-//habitDBuser
-
-//YkHymVu0ufpJKsJ8
-
 app.use(cors());
 app.use(express.json());
 
-const uri =
-  "mongodb+srv://habitDBuser:YkHymVu0ufpJKsJ8@cluster0.bwqjvbl.mongodb.net/?appName=Cluster0";
+// Read from env
+const uri = process.env.MONGO_URI;
+if (!uri) {
+  console.error(
+    "❌ ERROR: MONGO_URI not found. Create a .env file or set MONGO_URI in environment."
+  );
+}
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -25,88 +26,130 @@ const client = new MongoClient(uri, {
   },
 });
 
+let habitsCollection;
+let usersCollection;
+
+async function connectDB() {
+  if (!habitsCollection || !usersCollection) {
+    await client.connect();
+    const db = client.db("habit_db");
+    habitsCollection = db.collection("habits");
+    usersCollection = db.collection("users");
+    console.log("Connected to MongoDB");
+  }
+}
+
 app.get("/", (req, res) => {
   res.send("Habit Tracker Server is running");
 });
 
-async function run() {
+// Create user
+app.post("/users", async (req, res) => {
   try {
-    await client.connect();
-
-    const db = client.db("habit_db");
-    const habitsCollection = db.collection("habits");
-    const usersCollection = db.collection("users");
-
-    app.post("/users", async (req, res) => {
-      const newUser = req.body;
-
-      const email = req.body.email;
-      const query = { email: email };
-      const existingUser = await usersCollection.findOne(query);
-      if (existingUser) {
-        res.send({ message: "Already User Exist" });
-      } else {
-        const result = await usersCollection.insertOne(newUser);
-        res.send(result);
-      }
-    });
-
-    app.post("/allhabits", async (req, res) => {
-      const newHabit = req.body;
-      const result = await habitsCollection.insertOne(newHabit);
-      res.send(result);
-    });
-
-    app.patch("/allhabits/:id", async (req, res) => {
-      const id = req.params.id;
-      const updateHabit = req.body;
-      const query = { _id: new ObjectId(id) };
-      const update = {
-        $set: updateHabit,
-      };
-      const result = await habitsCollection.updateOne(query, update);
-      res.send(result);
-    });
-
-    app.get("/allhabits", async (req, res) => {
-      const email = req.query.email;
-      const query = {};
-      if (email) {
-        query.creatorEmail = email;
-      }
-      const cursor = habitsCollection.find(query);
-      const result = await cursor.toArray();
-      res.send(result);
-    });
-    app.get("/featuredHabits", async (req, res) => {
-      const cursor = habitsCollection.find().sort({ created_at: -1 }).limit(6);
-      const result = await cursor.toArray();
-      res.send(result);
-    });
-    app.get("/allhabits/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await habitsCollection.findOne(query);
-      res.send(result);
-    });
-
-    app.delete("/allhabits/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await habitsCollection.deleteOne(query);
-      res.send(result);
-    });
-
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
-  } finally {
+    await connectDB();
+    const newUser = req.body;
+    const email = newUser.email;
+    const existingUser = await usersCollection.findOne({ email });
+    if (existingUser) return res.send({ message: "Already User Exist" });
+    const result = await usersCollection.insertOne(newUser);
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: "Server error" });
   }
-}
-
-run().catch(console.dir);
-
-app.listen(port, () => {
-  console.log("Habit Tracker server is running on ", port);
 });
+
+// Add habit
+app.post("/allhabits", async (req, res) => {
+  try {
+    await connectDB();
+    const newHabit = req.body;
+    const result = await habitsCollection.insertOne(newHabit);
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: "Server error" });
+  }
+});
+
+// Update habit (PATCH)
+app.patch("/allhabits/:id", async (req, res) => {
+  try {
+    await connectDB();
+    const id = req.params.id;
+    const updateHabit = req.body;
+    const result = await habitsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateHabit }
+    );
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: "Server error" });
+  }
+});
+
+// Get habits
+app.get("/allhabits", async (req, res) => {
+  try {
+    await connectDB();
+    const email = req.query.email;
+    const query = email ? { creatorEmail: email } : {};
+    const result = await habitsCollection.find(query).toArray();
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: "Server error" });
+  }
+});
+
+// Featured habits
+app.get("/featuredHabits", async (req, res) => {
+  try {
+    await connectDB();
+    const result = await habitsCollection
+      .find()
+      .sort({ createdAt: -1 })
+      .limit(6)
+      .toArray();
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: "Server error" });
+  }
+});
+
+// Get single habit
+app.get("/allhabits/:id", async (req, res) => {
+  try {
+    await connectDB();
+    const id = req.params.id;
+    const result = await habitsCollection.findOne({ _id: new ObjectId(id) });
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: "Server error" });
+  }
+});
+
+// Delete habit
+app.delete("/allhabits/:id", async (req, res) => {
+  try {
+    await connectDB();
+    const id = req.params.id;
+    const result = await habitsCollection.deleteOne({ _id: new ObjectId(id) });
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: "Server error" });
+  }
+});
+
+export default app;
+
+if (process.env.VERCEL !== "1") {
+  const port = process.env.PORT || 3000;
+  app.listen(port, () =>
+    console.log(`Server listening on http://localhost:${port}`)
+  );
+}
